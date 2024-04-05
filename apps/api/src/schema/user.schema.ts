@@ -36,7 +36,7 @@ export class User {
   @Prop({ type: String })
   phone_number: string;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number, default: 0, immutable: true })
   eventCount: number;
 
   // @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'UserEvent' }] })
