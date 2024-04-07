@@ -8,9 +8,11 @@ import { UserSchema } from './schema';
 import { EventController } from './event/event.controller';
 import { EventService } from './event/event.service';
 import { EventModule } from './event/event.module';
-import { MailerController } from './mailer/mailer.controller';
 import { MailerService } from './mailer/mailer.service';
 import { MailerModule } from './mailer/mailer.module';
+import { EventsController } from './events/events.controller';
+import { EventsService } from './events/events.service';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -21,9 +23,10 @@ import { MailerModule } from './mailer/mailer.module';
     MongooseModule.forFeature([{name:  'User', schema: UserSchema}]),
     AuthModule,
     EventModule,
-    MailerModule
+    MailerModule,
+    EventsModule
   ],
-  controllers: [AuthController, EventController, MailerController],
-  providers: [AuthService, EventService, MailerService],
+  controllers: [AuthController, EventController, EventsController],
+  providers: [AuthService, EventService, MailerService, EventsService],
 })
 export class AppModule {}

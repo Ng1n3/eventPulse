@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -9,12 +10,14 @@ import mongoose from 'mongoose';
 import { CreateUserDto, SignUserDto, UpdateUserDto } from 'src/dto';
 import { User } from 'src/schema';
 import * as argon from 'argon2';
+import { MailerService } from 'src/mailer/mailer.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: mongoose.Model<User>,
     private config: ConfigService,
+    private emailService: MailerService,
   ) {}
 
   async signup(dto: CreateUserDto): Promise<User> {
@@ -88,18 +91,69 @@ export class AuthService {
 
   async getUser(id: string): Promise<User> {
     try {
-      const user = await this.userModel.findById(id)
-      if(!user) throw new NotFoundException('No user with this id found');
-      return user
+      const user = await this.userModel.findById(id);
+      if (!user) throw new NotFoundException('No user with this id found');
+      return user;
     } catch (error) {
-      throw error
+      throw error;
     }
   }
 
-  async sendPasswordResetCode(email: string): Promise<void> {
-    const user = await this.userModel.findOne({email})
-    if(!user) throw new NotFoundException('User not found')
+  async sendNotification(dto: SignUserDto): Promise<void> {
+    try {
+      await this.emailService.sendEmail(
+        dto.email,
+        'Reset Password',
+        'This a notification email from 34Z1',
+      );
+      console.log('Notification email sent successfully');
+    } catch (error) {
+      throw error;
+    }
+  }
 
-    const resetCode = crypto.randomUUID()
+  async sendPasswordResetCode(email: string): Promise<object> {
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new NotFoundException('User not found');
+
+    const resetCode = crypto.randomUUID();
+    // console.log(resetCode);
+
+    const expirationTime = new Date();
+    expirationTime.setMinutes(expirationTime.getMinutes() + 1);
+
+    user.passwordResetCode = resetCode;
+    user.passwordResetCodeExpiresAt = expirationTime;
+
+    const currentTime = new Date();
+
+    if (user.passwordResetCodeExpiresAt < currentTime)
+      throw new BadRequestException(
+        'reset token expired, please request a new one',
+      );
+    await user.save();
+
+    const message = `Your password reset code is: ${resetCode}`;
+    await this.emailService.sendEmail(
+      user.email,
+      'Password reset code',
+      message,
+    );
+
+    return { message: `Code has been successfully sent to ${email}` };
+  }
+
+  async resetPassword(
+    email: string,
+    code: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.userModel.findOne({ email });
+    if (!user || user.passwordResetCode !== code)
+      throw new NotFoundException('Invalid reset code');
+
+    user.hash = await argon.hash(newPassword);
+    user.passwordResetCode = null;
+    await user.save();
   }
 }

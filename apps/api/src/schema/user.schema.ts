@@ -30,6 +30,12 @@ export class User {
   @Prop({ type: String, required: true })
   state: string;
 
+  @Prop({type: String})
+  passwordResetCode: string
+
+  @Prop({type: Date})
+  passwordResetCodeExpiresAt: Date
+
   @Prop({ type: String })
   zipCode: string;
 

@@ -9,7 +9,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { CreateUserDto, SignUserDto } from 'src/dto';
+import { CreateUserDto, SignUserDto, UpdateUserDto } from 'src/dto';
 import { AuthService } from './auth.service';
 
 @Controller('v1/auth')
@@ -30,7 +30,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Patch(':id')
-  update(@Body() dto: SignUserDto, @Param('id') id: string) {
+  update(@Body() dto: UpdateUserDto, @Param('id') id: string) {
     return this.authService.update(dto, id);
   }
 
@@ -49,6 +49,23 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Get(':id')
   getUser(@Param('id') id: string) {
-    return this.authService.getUser(id)
+    return this.authService.getUser(id);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('send-reset-code')
+  async sendResetCode(@Body('email') email: string): Promise<object> {
+    await this.authService.sendPasswordResetCode(email);
+    return { message: `Code has been successfully sent to ${email}` };
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('reset-password')
+  async resetPassword(
+    @Body('email') email: string,
+    @Body('code') code: string,
+    @Body('newPassword') newPassword: string,
+  ): Promise<void> {
+    await this.authService.resetPassword(email, code, newPassword);
   }
 }

@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, IsOptional, ArrayNotEmpty, ArrayUnique } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, IsOptional, ArrayNotEmpty, ArrayUnique, IsDate } from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty()
@@ -32,6 +32,14 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   zipCode: string;
+
+  @IsOptional()
+  @IsString()
+  passwordResetCode: string
+
+  @IsOptional()
+  @IsDate()
+  passwordResetCodeExpiresAt: Date
 
   @IsNotEmpty()
   @IsString()

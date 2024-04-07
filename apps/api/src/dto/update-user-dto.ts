@@ -35,6 +35,10 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
+  passwordResetCode: string
+
+  @IsOptional()
+  @IsString()
   phone_number?: string;
 
   @IsOptional()
