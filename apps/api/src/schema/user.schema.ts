@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
+import { EventDocument } from './event.schema';
 // import { UserEvent } from './user-event.schema';
 
 export type UserDocument = User & Document;
@@ -45,8 +46,8 @@ export class User {
   @Prop({ type: Number, default: 0, immutable: true })
   eventCount: number;
 
-  // @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'UserEvent' }] })
-  // userEvents: UserEvent[];
+  @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'Event' }] })
+  userEvents: EventDocument;
 
   @Prop({ type: [String], default: [] })
   tags: string[];

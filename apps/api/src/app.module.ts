@@ -11,6 +11,9 @@ import { EventsController } from './events/events.controller';
 import { EventSchema } from './schema/event.schema';
 import { EventService } from './events/events.service';
 import { EventModule } from './events/events.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AtGuard } from './auth/common/guards';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -25,8 +28,17 @@ import { EventModule } from './events/events.module';
     AuthModule,
     MailerModule,
     EventModule,
+    JwtModule.register({}),
   ],
   controllers: [AuthController, EventsController],
-  providers: [AuthService, EventService, MailerService],
+  providers: [
+    AuthService,
+    EventService,
+    MailerService,
+    {
+      provide: APP_GUARD,
+      useClass: AtGuard,
+    },
+  ],
 })
 export class AppModule {}

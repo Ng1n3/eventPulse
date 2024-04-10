@@ -45,9 +45,9 @@ export class CreateUserDto {
   @IsString()
   phone_number: string;
 
-  // @IsOptional()
-  // @ArrayNotEmpty()
-  // userEvents?: string[]; // Assuming userEvents will be an array of UserEvent IDs
+  @IsOptional()
+  @ArrayUnique()
+  userEvents?: string[]; // Assuming userEvents will be an array of UserEvent IDs
 
   @IsOptional()
   @ArrayUnique()

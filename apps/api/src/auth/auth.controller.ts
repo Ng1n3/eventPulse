@@ -11,17 +11,20 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto, SignUserDto, UpdateUserDto } from 'src/dto';
 import { AuthService } from './auth.service';
+import { Public } from './common/decorators';
 
 @Controller('v1/auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @Post('signup')
   signup(@Body() dto: CreateUserDto) {
     return this.authService.signup(dto);
   }
 
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Post('signin')
   signin(@Body() dto: SignUserDto) {

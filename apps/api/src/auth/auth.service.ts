@@ -11,6 +11,8 @@ import { CreateUserDto, SignUserDto, UpdateUserDto } from 'src/dto';
 import { User } from 'src/schema';
 import * as argon from 'argon2';
 import { MailerService } from 'src/mailer/mailer.service';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload, Tokens } from './types';
 
 @Injectable()
 export class AuthService {
@@ -18,9 +20,10 @@ export class AuthService {
     @InjectModel(User.name) private userModel: mongoose.Model<User>,
     private config: ConfigService,
     private emailService: MailerService,
+    private jwtService: JwtService,
   ) {}
 
-  async signup(dto: CreateUserDto): Promise<User> {
+  async signup(dto: CreateUserDto): Promise<Tokens> {
     try {
       const hash = await argon.hash(dto.hash);
 
@@ -36,7 +39,10 @@ export class AuthService {
           throw error;
         });
 
-      return newUser;
+      const tokens = await this.getTokens(newUser.id, newUser.email);
+      const access_token = tokens.access_token;
+
+      return { access_token };
     } catch (error) {
       throw error;
     }
@@ -155,5 +161,20 @@ export class AuthService {
     user.hash = await argon.hash(newPassword);
     user.passwordResetCode = null;
     await user.save();
+  }
+
+  async getTokens(userId: string, email: string) {
+    const jwtPayload: JwtPayload = {
+      sub: userId,
+      email,
+    };
+    const access_token = await this.jwtService.signAsync(jwtPayload, {
+      secret: this.config.get<string>('ACCESS_TOKEN'),
+      expiresIn: '15m',
+    });
+
+    return {
+      access_token,
+    };
   }
 }

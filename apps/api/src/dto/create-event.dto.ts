@@ -37,6 +37,10 @@ export class CreateEventDto {
   venue: string;
 
   @IsNotEmpty()
+  @IsString()
+  createdBy: string //userID
+
+  @IsNotEmpty()
   @IsInt()
   attendees: number;
 }
