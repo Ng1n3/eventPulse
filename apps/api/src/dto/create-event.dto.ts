@@ -38,7 +38,11 @@ export class CreateEventDto {
 
   @IsNotEmpty()
   @IsString()
-  createdBy: string //userID
+  eventUserId: string //userID
+
+  @IsNotEmpty()
+  @IsString()
+  createdBy: string
 
   @IsNotEmpty()
   @IsInt()

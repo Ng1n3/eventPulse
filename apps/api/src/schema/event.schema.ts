@@ -48,7 +48,10 @@ export class Event {
   attendees: number;
 
   @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'User' }] })
-  eventUsers: UserDocument;
+  eventUserId: UserDocument;
+
+  @Prop({type:[{ type: mongoose.Types.ObjectId, ref: 'User' }]})
+  createdBy: UserDocument;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);

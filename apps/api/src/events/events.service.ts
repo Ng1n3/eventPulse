@@ -9,17 +9,19 @@ import mongoose from 'mongoose';
 import { EditEventDto } from 'src/dto';
 import { CreateEventDto } from 'src/dto/create-event.dto';
 import { MailerService } from 'src/mailer/mailer.service';
+import { User } from 'src/schema';
 import { Event } from 'src/schema/event.schema';
 
 @Injectable()
 export class EventService {
   constructor(
     @InjectModel(Event.name) private eventModel: mongoose.Model<Event>,
+    @InjectModel(User.name) private userModel: mongoose.Model<User>,
     private config: ConfigService,
     private emailService: MailerService,
   ) {}
 
-  async createEvent(dto: CreateEventDto): Promise<Event> {
+  async createEvent(dto: CreateEventDto, userId: string): Promise<Event> {
     try {
       const event = await this.eventModel.findOne({ title: dto.title });
       if (event)
@@ -27,9 +29,15 @@ export class EventService {
           'This title already exists, please use another title',
         );
 
-      const newEvent = await this.eventModel.create(dto).catch((error) => {
-        throw error;
-      });
+      const user = await this.userModel.findById(userId)
+      if(!user) throw new NotFoundException('user not found')
+      
+        
+      const newEvent = await this.eventModel
+        .create({ ...dto, eventUsersId: userId, createdBy: user.name })
+        .catch((error) => {
+          throw error;
+        });
 
       return newEvent;
     } catch (error) {
@@ -72,10 +80,11 @@ export class EventService {
 
   async deleteEvent(id: string): Promise<void> {
     try {
-      const event = await this.eventModel.findByIdAndDelete(id)
-      if(!event) throw new NotFoundException('no event with this id exist in database')
+      const event = await this.eventModel.findByIdAndDelete(id);
+      if (!event)
+        throw new NotFoundException('no event with this id exist in database');
     } catch (error) {
-      throw error
+      throw error;
     }
   }
 }

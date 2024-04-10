@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post
 import { CreateEventDto } from 'src/dto/create-event.dto';
 import { EventService } from './events.service';
 import { EditEventDto } from 'src/dto';
+import { GetCurrentUser, GetCurrentUserId } from 'src/auth/common/decorators';
 
 
 @Controller('v1/events')
@@ -10,8 +11,8 @@ export class EventsController {
 
   @HttpCode(HttpStatus.CREATED)
   @Post('create-event')
-  createEvent(@Body() dto: CreateEventDto) {
-    return this.eventService.createEvent(dto);
+  createEvent(@GetCurrentUserId() userId: string, @Body() dto: CreateEventDto) {
+    return this.eventService.createEvent(dto, userId);
   }
 
   @HttpCode(HttpStatus.OK)

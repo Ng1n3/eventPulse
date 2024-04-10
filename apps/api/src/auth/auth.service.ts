@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import * as argon from 'argon2';
 import { MailerService } from 'src/mailer/mailer.service';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload, Tokens } from './types';
+import { Token } from 'nodemailer/lib/xoauth2';
 
 @Injectable()
 export class AuthService {
@@ -40,15 +42,14 @@ export class AuthService {
         });
 
       const tokens = await this.getTokens(newUser.id, newUser.email);
-      const access_token = tokens.access_token;
-
-      return { access_token };
+      await this.updateRtHash(user.id, tokens.refresh_token);
+      return tokens;
     } catch (error) {
       throw error;
     }
   }
 
-  async signin(dto: SignUserDto): Promise<User> {
+  async signin(dto: SignUserDto): Promise<Tokens> {
     try {
       const user = await this.userModel.findOne({ email: dto.email });
       if (!user) throw new NotFoundException('credentials incorrect');
@@ -56,20 +57,37 @@ export class AuthService {
       const passwordMatch = await argon.verify(user.hash, dto.hash);
       if (!passwordMatch) throw new NotFoundException('credentials incorrect');
 
-      return user;
+      const tokens = await this.getTokens(user.id, user.email);
+      await this.updateRtHash(user.id, tokens.refresh_token);
+
+      return tokens;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async signout(userId: string): Promise<boolean> {
+    try {
+
+      await this.userModel.updateMany({ _id: userId, hashedRt: null });
+      
+      return true
     } catch (error) {
       throw error;
     }
   }
 
   async update(dto: UpdateUserDto, id: string): Promise<User> {
+
     try {
       const user = await this.userModel.findByIdAndUpdate(id, dto, {
         new: true,
       });
+
       if (!user) throw new NotFoundException('id invalid');
 
       return user;
+
     } catch (error) {
       throw error;
     }
@@ -163,18 +181,46 @@ export class AuthService {
     await user.save();
   }
 
+  async refreshTokens(userId: string, refreshToken: string): Promise<Tokens> {
+    const user = await this.userModel.findById(userId);
+
+    if (!user) throw new ForbiddenException('access denied, user not found');
+
+    const refreshTokenMatches = await argon.verify(refreshToken, user.hashedRt);
+
+    if (!refreshTokenMatches) throw new ForbiddenException('Access denied');
+
+    const tokens = await this.getTokens(user.id, user.email);
+    await this.updateRtHash(user.id, tokens.refresh_token);
+
+    return tokens;
+  }
+
   async getTokens(userId: string, email: string) {
     const jwtPayload: JwtPayload = {
       sub: userId,
       email,
     };
-    const access_token = await this.jwtService.signAsync(jwtPayload, {
-      secret: this.config.get<string>('ACCESS_TOKEN'),
-      expiresIn: '15m',
-    });
+
+    const [at, rt] = await Promise.all([
+      this.jwtService.signAsync(jwtPayload, {
+        secret: this.config.get<string>('ACCESS_TOKEN'),
+        expiresIn: '15m',
+      }),
+      this.jwtService.signAsync(jwtPayload, {
+        secret: this.config.get<string>('REFRESH_TOKEN'),
+        expiresIn: '7d',
+      }),
+    ]);
 
     return {
-      access_token,
+      access_token: at,
+      refresh_token: rt,
     };
+  }
+
+  async updateRtHash(userId: string, refreshToken: string): Promise<void> {
+    const hash = await argon.hash(refreshToken);
+    await this.userModel.updateMany({ _id: userId, hashedRt: hash });
   }
 }
