@@ -45,6 +45,10 @@ export class CreateEventDto {
   createdBy: string
 
   @IsNotEmpty()
+  @IsString()
+  subscribersId: string
+
+  @IsNotEmpty()
   @IsInt()
   attendees: number;
 }

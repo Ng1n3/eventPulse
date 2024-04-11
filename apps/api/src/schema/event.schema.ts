@@ -44,8 +44,11 @@ export class Event {
   @Prop({ type: [String] })
   venue: string[];
 
-  @Prop({ type: Number, immutable: true, default: 0})
+  @Prop({ type: Number ,default: 0})
   attendees: number;
+
+  @Prop({type: [{ type: mongoose.Types.ObjectId, ref: 'User' }]})
+  subscribersId: string[]
 
   @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'User' }] })
   eventUserId: UserDocument;

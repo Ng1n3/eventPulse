@@ -1,8 +1,22 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { CreateEventDto } from 'src/dto/create-event.dto';
 import { EventService } from './events.service';
 import { EditEventDto } from 'src/dto';
-import { GetCurrentUser, GetCurrentUserId } from 'src/auth/common/decorators';
+import {
+  GetCurrentUser,
+  GetCurrentUserId,
+  Public,
+} from 'src/auth/common/decorators';
 
 
 @Controller('v1/events')
@@ -22,9 +36,22 @@ export class EventsController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @Get('my-events')
+  async getMyEvents(@GetCurrentUserId() userId: string) {
+    return await this.eventService.getEventsByUserId(userId);
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
   @Get('/')
   allEvents() {
-    return this.eventService.allEvents()
+    return this.eventService.allEvents();
+  }
+
+  @HttpCode(HttpStatus.CREATED)
+  @Post('buy-event/:id')
+  async buyEvent(@GetCurrentUserId() userId: string, @Param('id') id: string) {
+    return await this.eventService.buyEvent(userId, id);
   }
 
   @HttpCode(HttpStatus.OK)
@@ -36,6 +63,6 @@ export class EventsController {
   @HttpCode(HttpStatus.OK)
   @Delete(':id')
   deleteEvent(@Param('id') id: string) {
-    return this.eventService.deleteEvent(id)
+    return this.eventService.deleteEvent(id);
   }
 }

@@ -29,10 +29,9 @@ export class EventService {
           'This title already exists, please use another title',
         );
 
-      const user = await this.userModel.findById(userId)
-      if(!user) throw new NotFoundException('user not found')
-      
-        
+      const user = await this.userModel.findById(userId);
+      if (!user) throw new NotFoundException('user not found');
+
       const newEvent = await this.eventModel
         .create({ ...dto, eventUsersId: userId, createdBy: user.name })
         .catch((error) => {
@@ -86,5 +85,28 @@ export class EventService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async getEventsByUserId(userId: string): Promise<Event[]> {
+    const user = await this.userModel.findById(userId);
+    return this.eventModel.find({ createdBy: user.name });
+  }
+
+  async buyEvent(userId: string, id: string): Promise<Event> {
+    const checkUser = await this.userModel.findById(userId);
+    if (!checkUser) throw new NotFoundException('User not found');
+    // run paystack API here
+    const event = await this.eventModel.findById(id);
+    if (!event) throw new NotFoundException('event not found');
+
+    if (event.subscribersId.includes(userId))
+      throw new ConflictException('Event already bought by this user');
+
+    event.subscribersId.push(userId);
+    event.attendees += 1;
+
+    await event.save();
+
+    return event;
   }
 }

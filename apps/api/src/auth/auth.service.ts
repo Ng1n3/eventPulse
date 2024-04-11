@@ -42,7 +42,7 @@ export class AuthService {
         });
 
       const tokens = await this.getTokens(newUser.id, newUser.email);
-      await this.updateRtHash(user.id, tokens.refresh_token);
+      await this.updateRtHash(newUser.id, tokens.refresh_token);
       return tokens;
     } catch (error) {
       throw error;
@@ -68,17 +68,15 @@ export class AuthService {
 
   async signout(userId: string): Promise<boolean> {
     try {
-
       await this.userModel.updateMany({ _id: userId, hashedRt: null });
-      
-      return true
+
+      return true;
     } catch (error) {
       throw error;
     }
   }
 
   async update(dto: UpdateUserDto, id: string): Promise<User> {
-
     try {
       const user = await this.userModel.findByIdAndUpdate(id, dto, {
         new: true,
@@ -87,7 +85,6 @@ export class AuthService {
       if (!user) throw new NotFoundException('id invalid');
 
       return user;
-
     } catch (error) {
       throw error;
     }
@@ -221,6 +218,9 @@ export class AuthService {
 
   async updateRtHash(userId: string, refreshToken: string): Promise<void> {
     const hash = await argon.hash(refreshToken);
-    await this.userModel.updateMany({ _id: userId, hashedRt: hash });
+    await this.userModel.updateMany(
+      { _id: userId },
+      { $set: { hashedRt: hash } },
+    );
   }
 }
