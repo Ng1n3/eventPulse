@@ -5,19 +5,21 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  InternalServerErrorException,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CreateEventDto } from 'src/dto/create-event.dto';
 import { EventService } from './events.service';
 import { EditEventDto } from 'src/dto';
 import {
-  GetCurrentUser,
   GetCurrentUserId,
   Public,
 } from 'src/auth/common/decorators';
-
+import { Event } from 'src/schema';
 
 @Controller('v1/events')
 export class EventsController {
@@ -43,9 +45,34 @@ export class EventsController {
 
   @Public()
   @HttpCode(HttpStatus.OK)
-  @Get('/')
-  allEvents() {
-    return this.eventService.allEvents();
+  @Get()
+  async allEvents(
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Query('sortBy') sortBy: string,
+    @Query('sortOrder') sortOrder: 'asc' | 'desc',
+    @Query('filters') filters: string,
+  ): Promise<{
+    data: Event[];
+    total: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  }> {
+    try {
+      const parsedFilters = JSON.parse(filters || '{}');
+      const { data, total, hasNextPage, hasPreviousPage } =
+        await this.eventService.allEvents(
+          page,
+          limit,
+          sortBy,
+          sortOrder,
+          parsedFilters,
+        );
+
+      return { data, total, hasNextPage, hasPreviousPage };
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to retrieve events');
+    }
   }
 
   @HttpCode(HttpStatus.CREATED)

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { MongooseModule, Schema } from '@nestjs/mongoose';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
@@ -14,6 +14,7 @@ import { EventModule } from './events/events.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AtGuard } from './auth/common/guards';
 import { JwtModule } from '@nestjs/jwt';
+import { GlobalErrorFilter } from './middleware/error.middleware';
 
 @Module({
   imports: [
@@ -41,4 +42,8 @@ import { JwtModule } from '@nestjs/jwt';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(GlobalErrorFilter).forRoutes({path: '*', method: RequestMethod.ALL})
+  }
+}

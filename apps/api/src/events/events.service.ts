@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose from 'mongoose';
+import mongoose, { SortOrder } from 'mongoose';
 import { EditEventDto } from 'src/dto';
 import { CreateEventDto } from 'src/dto/create-event.dto';
 import { MailerService } from 'src/mailer/mailer.service';
@@ -57,11 +57,33 @@ export class EventService {
     }
   }
 
-  async allEvents(): Promise<Event[]> {
+  async allEvents(
+    page: number = 1,
+    limit: number = 10,
+    sortBy: string = 'createdAt',
+    sortOrder: 'asc' | 'desc' = 'desc',
+    filters: any = {},
+  ): Promise<{
+    data: Event[];
+    total: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  }> {
     try {
-      const events = await this.eventModel.find();
-      if (!events) throw new NotFoundException('No events in database');
-      return events;
+      const skip = (page - 1) * limit;
+      const sortByOptions: {[key:string]: SortOrder} = {}
+      sortByOptions[sortBy] =  sortOrder === 'asc' ? 1 : -1 
+      const query = this.eventModel
+        .find(filters)
+        .skip(skip)
+        .limit(limit)
+        .sort(sortByOptions);
+      const total = await this.eventModel.countDocuments(filters);
+      const hasNextPage = skip + limit < total;
+      const hasPreviousPage = skip > 0;
+
+      const data = await query.exec();
+      return { data, total, hasNextPage, hasPreviousPage };
     } catch (error) {
       throw error;
     }
